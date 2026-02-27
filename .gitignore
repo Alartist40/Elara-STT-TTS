@@ -3,14 +3,45 @@ elara
 
 # Model files (too large for git)
 models/*.gguf
+models/*.onnx
+models/*.json
+
+# Piper binary and libs (platform specific, user downloads via setup.sh)
+piper/
+*.tar.gz
+
+# Python virtual environment (massive, never commit)
+venv/
+env/
+ENV/
 
 # Python junk
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+*.egg
+.pytest_cache/
 
-# Logs
+# Go build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+go.work
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs and temp files
 *.log
-
-# Temp files
 *.tmp
+*.bak
+
+# OS files
+Thumbs.db
