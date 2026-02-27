@@ -1,0 +1,19 @@
+# Core (Tier1) - LLM inference
+# NOTE: Requires build tools. Install: sudo pacman -S gcc python-dev
+# Or use pre-built: CMAKE_ARGS="-DLLAMA_CUDA=off" pip install llama-cpp-python
+llama-cpp-python>=0.2.0
+
+# STT - Whisper
+openai-whisper
+torch
+numpy
+
+# TTS - Piper Python API (optional, binary preferred)
+# piper-tts  # Use only if not using piper binary
+
+# Audio playback (system packages, not pip):
+# espeak  # sudo pacman -S espeak / sudo apt install espeak
+# aplay   # sudo pacman -S alsa-utils / sudo apt install alsa-utils
+
+# Utils
+pyyaml

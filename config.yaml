@@ -1,0 +1,30 @@
+# Elara Mini Configuration
+# Minimal, human-readable, no nested madness
+
+system:
+  name: "Elara Mini"
+  version: "0.1.0"
+  
+paths:
+  model: "model/model.py"
+  stt: "voice/stt.py"
+  tts: "voice/tts.py"
+  gguf_model: "models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+
+hotkeys:
+  voice_trigger: "@"      # Press @ to activate voice input
+  
+voice:
+  stt_model: "tiny"       # tiny/base/small — tiny = 39MB, fast
+  record_seconds: 5
+  tts_speed: 1.0          # 0.5 = slow, 1.0 = normal, 1.5 = fast
+  tts_engine: "auto"      # auto/piper/espeak/say
+  
+model:
+  max_tokens: 256
+  threads: 4              # CPU threads for llama.cpp
+  context_size: 4096
+
+behavior:
+  show_timing: false      # Print inference time
+  save_history: false     # Save queries to file

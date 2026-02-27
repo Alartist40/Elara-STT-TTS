@@ -1,0 +1,16 @@
+# Compiled binary
+elara
+
+# Model files (too large for git)
+models/*.gguf
+
+# Python junk
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
