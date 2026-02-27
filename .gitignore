@@ -3,8 +3,8 @@ elara
 
 # Model files (too large for git)
 models/*.gguf
-models/*.onnx
-models/*.json
+models/*.onnx*
+models/*.json*
 
 # Piper binary and libs (platform specific, user downloads via setup.sh)
 piper/
