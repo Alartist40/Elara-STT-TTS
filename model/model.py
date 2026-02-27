@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 import sys
 import os
+import yaml
 
-# Path to your existing tier1.py
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# Add parent to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from model.tier1 import Tier1Engine
+from backends import BACKENDS
 
-_model = None
+def load_config():
+    config_path = os.path.join(os.path.dirname(__file__), "..", "config.yaml")
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)
 
-def get_model():
-    global _model
-    if _model is None:
-        _model = Tier1Engine(
-            model_path="models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
-            n_threads=4
-        )
-    return _model
+def get_backend(config: dict):
+    backend_name = config.get("model", {}).get("backend", "local")
+    backend_class = BACKENDS.get(backend_name)
+    
+    if not backend_class:
+        raise ValueError(f"Unknown backend: {backend_name}")
+    
+    # Get backend-specific config
+    backend_config = config.get("model", {}).get(backend_name, {})
+    return backend_class(backend_config)
 
 def main():
     if len(sys.argv) < 2:
@@ -26,8 +32,9 @@ def main():
     query = sys.argv[1]
     
     try:
-        model = get_model()
-        response = model.generate(query, max_tokens=256)
+        config = load_config()
+        backend = get_backend(config)
+        response = backend.generate(query, max_tokens=256)
         print(response)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -1,23 +1,21 @@
-  **setup.sh placement:** Root directory (same level as `main.go`, `elara` binary). Your structure looks correct.
-
----
-
-**README.md**
+  **README.md**
 
 ```markdown
 # Elara Mini
 
-A lightweight, offline IT assistant for old and small devices. 4GB RAM target. No cloud dependencies.
+A lightweight, offline IT assistant for old and small devices. 4GB RAM target. No cloud dependencies. Voice-interruptible conversations.
 
 ## What It Does
 
 - **Text/Voice Input:** Type normally or press `@` to speak
 - **AI Response:** Local LLM (TinyLlama 1.1B) generates answers
 - **Voice Output:** Piper TTS speaks the response aloud
+- **Interrupt:** Press `@` while speaking to cut off and start new voice input, or type `stop`
 - **Use Case:** System administration help without internet or heavy resources
 
 ## Architecture
 
+```
 ┌─────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
 │  User   │────→│  Go Main │────→│  Python  │────→│  Piper   │
 │ Input   │     │  Loop    │     │  Model   │     │  TTS     │
@@ -25,11 +23,13 @@ A lightweight, offline IT assistant for old and small devices. 4GB RAM target. N
      │                │                │                │
    Text/@         Fork-exec       llama.cpp         Local
    Voice           No server       Quantized         ONNX
+   Interrupt       Kill TTS        4 backends        Interruptible
+```
 
-
-- **Go:** Handles UI, hotkeys, process orchestration
+- **Go:** Handles UI, hotkeys, process orchestration, TTS kill signals
 - **Python:** Only for model inference (stateless, dies after each call)
-- **Piper:** Local neural TTS, 60MB model, CPU realtime
+- **Piper:** Local neural TTS, 60MB model, CPU realtime, killable process
+- **Interrupt System:** `@` key kills TTS process tree before recording
 
 ## Requirements
 
@@ -42,7 +42,7 @@ A lightweight, offline IT assistant for old and small devices. 4GB RAM target. N
 
 ## Quick Start
 
-``` bash
+```bash
 git clone <your-repo>
 cd "2. Elara simple"
 ./setup.sh
@@ -61,8 +61,38 @@ source venv/bin/activate
 [VOICE] Transcribed: restart nginx
 ← sudo systemctl restart nginx
 
+> explain the kernel  [starts speaking...]
+> @                 [cuts off, starts new recording]
+[VOICE] Recording 5 seconds...
+
+> stop              [cuts current speech]
+[TTS Stopped]
+
 > quit
 ```
+
+## Commands
+
+| Command | Action |
+|---------|--------|
+| `quit` | Exit program |
+| `stop` | Interrupt current speech |
+| `@` | Start voice recording (interrupts if speaking) |
+| `@text` | Use "text" as voice input without recording |
+
+## Backend Options
+
+Edit `config.yaml` to switch backends:
+
+```yaml
+model:
+  backend: "local"  # local | api | ollama | download
+```
+
+- **local:** Default, uses downloaded GGUF model
+- **api:** OpenAI/Anthropic API (requires `ELARA_API_KEY`)
+- **ollama:** Local Ollama instance (requires Ollama running)
+- **download:** Auto-download from HuggingFace on first run
 
 ## Manual Setup (if setup.sh fails)
 
@@ -101,12 +131,18 @@ go build -o elara main.go
 ```
 elara/
 ├── elara              # Compiled binary
-├── main.go            # Go entry point
+├── main.go            # Go entry point (interrupt handling)
 ├── setup.sh           # One-command setup
 ├── requirements.txt   # Python deps
+├── config.yaml        # Backend configuration
 ├── model/
-│   ├── model.py       # Python inference wrapper
-│   └── tier1.py       # LLM engine (llama.cpp)
+│   ├── model.py       # Python inference router
+│   └── backends/      # 4 backend implementations
+│       ├── __init__.py
+│       ├── local.py   # llama.cpp backend
+│       ├── api.py     # OpenAI/Anthropic API
+│       ├── ollama.py  # Ollama HTTP backend
+│       └── download.py# HF auto-download
 ├── voice/
 │   ├── stt.py         # Whisper STT
 │   └── tts.py         # Piper TTS wrapper
@@ -117,6 +153,7 @@ elara/
 ## Configuration
 
 Edit `config.yaml` to adjust:
+- Model backend (local/api/ollama/download)
 - Model paths
 - Voice recording duration
 - TTS speed
@@ -136,6 +173,10 @@ Edit `config.yaml` to adjust:
 **Model not loading:**
 - Download GGUF model to `models/`
 - Verify path in `config.yaml`
+
+**Interrupt not working:**
+- `pkill` must be available (standard on Linux)
+- Check no permission issues killing processes
 
 ## License
 

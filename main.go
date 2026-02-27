@@ -10,8 +10,10 @@ import (
 	"github.com/chzyer/readline"
 )
 
+var currentTTS *exec.Cmd
+
 func main() {
-	fmt.Println("Elara Mini — @ for voice, type to text, 'quit' to exit")
+	fmt.Println("Elara Mini — @ for voice, type to text, 'quit' to exit, 'stop' to interrupt")
 
 	rl, err := readline.New("> ")
 	if err != nil {
@@ -32,9 +34,15 @@ func main() {
 		if input == "quit" {
 			break
 		}
+		if input == "stop" {
+			killTTS()
+			fmt.Println("[TTS Stopped]")
+			continue
+		}
 
 		// Voice trigger: @ at start
 		if strings.HasPrefix(input, "@") {
+			killTTS() // Stop any current speech before recording
 			text := voiceInput(rl, strings.TrimPrefix(input, "@"))
 			if text != "" {
 				response := process(text)
@@ -101,6 +109,9 @@ func speak(text string) {
 		return
 	}
 
+	// Kill previous TTS if still running
+	killTTS()
+
 	// Use venv Python if available, fallback to system python3
 	pythonPath := "./venv/bin/python3"
 	if _, err := os.Stat(pythonPath); os.IsNotExist(err) {
@@ -109,15 +120,30 @@ func speak(text string) {
 
 	// Call Python TTS in background (non-blocking)
 	go func() {
-		cmd := exec.Command(pythonPath, "voice/tts.py", text, "--speed", "1.0")
-		cmd.Stderr = os.Stderr
-		err := cmd.Run()
+		currentTTS = exec.Command(pythonPath, "voice/tts.py", text, "--speed", "1.0")
+		currentTTS.Stderr = os.Stderr
+		err := currentTTS.Run()
+		currentTTS = nil
 		if err != nil {
-			// TTS failed, already printed to stderr
+			// TTS failed or was killed, ignore
 			return
 		}
 	}()
 
 	// Small delay so TTS starts before next prompt
 	time.Sleep(100 * time.Millisecond)
+}
+
+func killTTS() {
+	// Kill current TTS process
+	if currentTTS != nil && currentTTS.Process != nil {
+		currentTTS.Process.Kill()
+		currentTTS.Wait()
+		currentTTS = nil
+	}
+	// Also kill any orphaned audio players
+	exec.Command("pkill", "-9", "aplay").Run()
+	exec.Command("pkill", "-9", "paplay").Run()
+	exec.Command("pkill", "-9", "ffplay").Run()
+	exec.Command("pkill", "-9", "afplay").Run()
 }

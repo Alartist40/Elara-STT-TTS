@@ -68,3 +68,21 @@
 - Add conversation history
 - Optimize model loading (currently loads each time)
 - Add more voice models
+
+### Added (v0.2.0)
+- **Voice Interrupt System:** Press `@` during speech to immediately cut off TTS and start new recording
+- **Stop Command:** Type `stop` to interrupt current speech without new input
+- **Process Kill Architecture:** TTS runs as trackable process, killable via `killTTS()` function
+- **Backend System:** 4 pluggable backends (local, api, ollama, download) via config.yaml
+- **Multi-backend Support:** OpenAI API, Ollama local, HF download, local GGUF
+
+### Changed
+- `main.go` now manages TTS process lifecycle with global `currentTTS` variable
+- `speak()` kills previous TTS before starting new one
+- `voiceInput()` calls `killTTS()` at entry to ensure clean interrupt
+- Model loading moved to backend factory pattern
+
+### Technical Details
+- Added `killTTS()` function using `Process.Kill()` and `pkill` cleanup
+- TTS goroutine now assigns to global variable for tracking
+- Added cleanup for aplay/paplay/ffplay/afplay orphans
